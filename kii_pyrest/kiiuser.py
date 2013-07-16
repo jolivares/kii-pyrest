@@ -57,6 +57,4 @@ class UserClient(BaseClient):
 		return self._send(path, 'PUT', {})
 
 
-if __name__ == '__main__':
-  httplib2.debuglevel = 1
  
