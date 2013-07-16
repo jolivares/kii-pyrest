@@ -16,9 +16,10 @@ APP_KEY = getattr(credentials, 'APP_KEY')
 APP_CLIENT_ID = getattr(credentials, 'APP_CLIENT_ID')
 APP_CLIENT_SECRET = getattr(credentials, 'APP_CLIENT_SECRET')
 
+# init kii credentials
 init_kii(APP, APP_KEY, API_ENDPOINT)
 ADMIN_TOKEN = auth_app(APP_CLIENT_ID, APP_CLIENT_SECRET)
-# kii clients
+# init kii clients
 object_client = DataObjectClient(ADMIN_TOKEN, 'rw')
 user_client = UserClient(ADMIN_TOKEN)
 
@@ -55,7 +56,7 @@ def object_management():
 	)).order_by('title', False)
 	
 	messages, paginationKey = object_client.query(scope, bucket, q)
-	
+
 	# mark read messages as unread
 	for message in messages:
 		unread = {'read': False}
