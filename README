@@ -1,0 +1,16 @@
+kii_pyrest
+==========
+
+Unofficial kii.com REST API python client.
+It aims to build a thin layer around the REST API trying to reduce abstractions.
+It's mainly intended to be used as an admin tool.
+
+## Installation
+
+  $ git clone git@github.com:jolivares/kii-pyrest.git
+  $ cd kii-pyrest
+  $ python setup.py install
+
+## Usage
+
+Take a look at demo.py

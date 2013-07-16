@@ -1,0 +1,5 @@
+/build/
+*.pyc
+*.sublime-project
+*.sublime-workspace
+credentials.py
