@@ -39,20 +39,25 @@ class BaseClient(object):
 		headers['X-Kii-AppId'] = APP_ID
 		headers['X-Kii-AppKey'] = APP_KEY
 		headers['Authorization'] = 'Bearer ' + self.token
-		data = json.dumps(body)
+
+		data = json.dumps(body) if type(body) is dict else body		
 		
 		rest = httplib2.Http()
 		res, content = rest.request(uri, method, headers = headers, body = data)
 
+		print "Got server status %s" % res.status
+		print "Got server response %s" % content
+
 		if res.status > 399:
 			parse_error(res, content)
 
-		if res.status != 204 and content != None and 'json' in res['content-type'] :
+		if res.status != 204 and content != None and 'json' in res.get('content-type', 'undefined'):			
 			return json.loads(content)
 
 		return content
 
 def parse_error(res, content):
+	print content
 	error = "ERROR: "
 	if content != None:
 		if "json" in res['content-type']:

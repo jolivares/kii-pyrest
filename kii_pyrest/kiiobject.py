@@ -2,22 +2,26 @@ import httplib2
 import json
 import time
 from kiicommon import BaseClient
-from kiiuser import UserClient
+from query import Query
 
 class ObjectScope(object):
-	def __init__(self, app, user, group):
+	def __init__(self, scope_type, app, user, group):
+		self.type = scope_type
 		self.app = app
 		self.user = user
 		self.group = group
 	@classmethod
 	def for_app(cls, app):
-		return cls(app, None, None)
+		return cls('APP', app, None, None)
 	@classmethod
 	def for_user(cls, app, user):
-		return cls(app, user, None)
+		return cls('APP_AND_USER', app, user, None)
 	@classmethod
 	def for_group(cls, app, group):
-		return cls(app, None, group)
+		return cls('APP_AND_GROUP', app, None, group)
+	def to_map(self):
+		return {'type': self.type, 'appID': self.app, 
+			'userID': self.user, 'groupID': self.group}
 	def __repr__(self):
 		path = '/apps/%s' % (self.app)
 		if self.user != None:
@@ -25,53 +29,6 @@ class ObjectScope(object):
 		elif self.group != None:
 			path = '%s/groups/%s' % (path, self.group)
 		return path
-
-class Query(object):
-	def __init__(self, clause):
-		self.clause = clause
-	@classmethod
-	def with_clause(cls, clause):
-		return cls({'clause': clause.q})
-	def order_by(self, field, descending = False):
-		self.field = field
-		self.descending = descending
-		return self
-	def to_map(self):
-		q = {'bucketQuery': self.clause}
-		if hasattr(self, 'field') and self.field != None:
-			q.get('bucketQuery')['orderBy'] = self.field
-			q.get('bucketQuery')['descending'] = self.descending
-		return q
-
-class C(object):
-	def __init__(self, q):
-		self.q = q
-	@classmethod
-	def cAll(cls):
-		return cls({'type': 'all'})
-	@classmethod
-	def cEq(cls, field, value):
-		return cls({'type': 'eq', 'field': field, 'value': value})
-	@classmethod
-	def cRange(cls, field, upper_limit, lower_limit, upper_included, lower_included):
-		return cls({'type': 'range', 'field': field, 'upperLimit': upper_limit, 'lowerLimit': lower_limit,
-			'upperIncluded': upper_included, 'lowerIncluded': lower_limit})
-	@classmethod
-	def cIn(cls, field, values):
-		return cls({'type': 'in', 'field': field, 'values': values})
-	@classmethod
-	def cWithInBox(cls, field, sw, ne):
-		return cls({'type': 'geobox', 'field': field, 'box': {'sw': sw, 'ne': ne}})
-	@classmethod
-	def cWithInDistance(cls, field, center, radius, result_field = None):
-		return cls({'type': 'geodistance', 'field': field, 'center': center, 
-			'radius': radius, 'resultField': result_field })
-	@classmethod
-	def cAnd(cls, *clauses):
-		return cls({'type': 'and', 'clauses': [c.q for c in clauses]})
-	@classmethod
-	def cOr(cls, *clauses):
-		return cls({'type': 'or', 'clauses': [c.q for c in clauses]})
 
 class ACL(object):
 	def __init__(self, subject, verb):
@@ -97,6 +54,13 @@ class ACLVerb(object):
 	SUBSCRIBE_TO_TOPIC = 'SUBSCRIBE_TO_TOPIC'
 	SEND_MESSAGE_TO_TOPIC = 'SEND_MESSAGE_TO_TOPIC'
 
+class BucketQuery(Query):
+	def to_map(self):
+		return self._to_map('bucketQuery')
+
+class BucketType(object):
+	READ_WRITE = 'rw'
+	SYNC = 'sync'
 
 class DataObjectClient(BaseClient):	
 	def __init__(self, token, bucket_type):
@@ -113,7 +77,7 @@ class DataObjectClient(BaseClient):
 		return self._send(path, 'GET', headers)
 	def query(self, object_scope, bucket, q):
 		path = '%s/buckets/%s:%s/query' % (object_scope,  self.bucket_type, bucket)
-		headers = {'content-type': 'application/vnd.kii.QueryRequest+json'}
+		headers = {'Content-Type': 'application/vnd.kii.QueryRequest+json'}
 		data = q.to_map()
 		res = self._send(path, 'POST', headers, data)
 		return res['results'], res['nextPaginationKey'] if 'nextPaginationKey' in res else None
@@ -135,7 +99,7 @@ class DataObjectClient(BaseClient):
 		path = '%s/acl/%s' % (object_scope, acl)
 		self._send(path, 'PUT', {})
 	def add_bucket_acl(self, object_scope, bucket, acl):
-		path = '%s/buckets/%s:%s/acl/%s' % (object_scope, bucket, acl)
+		path = '%s/buckets/%s:%s/acl/%s' % (object_scope, self.bucket_type, bucket, acl)
 		self._send(path, 'PUT', {})
 	def add_object_acl(self, object_scope, bucket, object_id, acl):
 		path = '%s/buckets/%s:%s/objects/%s/acl/%s' % (object_scope, self.bucket_type, bucket, object_id, acl)
@@ -172,3 +136,9 @@ class DataObjectClient(BaseClient):
 	def commit_upload(self, object_scope, bucket, object_id, upload_id):
 		path = '%s/buckets/%s:%s/objects/%s/body/uploads/%s/status/committed' % (object_scope, self.bucket_type, bucket, object_id, upload_id)
 		res = self._send(path, 'POST', {}, {})
+	def move_body(self, source_object_scope, source_bucket, source_object_id, target_object_scope, target_bucket, target_object_id):
+		path = '%s/buckets/%s:%s/objects/%s/body/move' % (source_object_scope, self.bucket_type, source_bucket, source_object_id)
+		headers = {'Content-Type': 'application/vnd.kii.ObjectBodyMoveRequest+json'}
+		req = {'targetObjectScope': target_object_scope.to_map(), 
+			'targetBucketID': target_bucket, 'targetObjectID': target_object_id}
+		res = self._send(path, 'POST', headers, req)

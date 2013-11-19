@@ -1,6 +1,11 @@
 import httplib2
 import json
 from kiicommon import BaseClient
+from query import Query
+
+class UserQuery(Query):
+	def to_map(self):
+		return self._to_map('userQuery')
 
 class UserClient(BaseClient):
 	def __init__(self, token):
@@ -36,7 +41,7 @@ class UserClient(BaseClient):
 		path = '/apps/%s/users/%s/password' % (self._get_app(), user_id)
 		headers = { 'Content-Type' : 'application/vnd.kii.ChangePasswordRequest+json' }
 		rq = {'oldPassword': old_pass, 'newPassword': new_pass}
-		self._send(path, 'PUT', headers, rq)
+		self._send(path, 'PUT', headers, rq)	
 	def create_group(self, name, owner, members):
 		path = '/apps/%s/groups' % (self._get_app())
 		headers = {'Content-Type' : 'application/vnd.kii.GroupCreationRequest+json'}
