@@ -7,6 +7,10 @@ class UserQuery(Query):
 	def to_map(self):
 		return self._to_map('userQuery')
 
+class GroupQuery(Query):
+	def to_map(self):
+		return self._to_map('groupQuery')
+
 class UserClient(BaseClient):
 	def __init__(self, token):
 		BaseClient.__init__(self, token)
@@ -51,6 +55,10 @@ class UserClient(BaseClient):
 		path = '/apps/%s/groups/%s' % (self._get_app(), group_id)
 		headers = {}
 		return self._send(path, 'GET', headers, rq)
+	def remove_group(self, group_id):
+		path = '/apps/%s/groups/%s' % (self._get_app(), group_id)
+		headers = {}
+		self._send(path, 'DELETE', headers, {})
 	def find_groups_by_owner(self, owner):
 		path = '/apps/%s/groups?owner=%s' % (self._get_app(), owner)
 		return self._send(path, 'GET', {})
@@ -60,6 +68,12 @@ class UserClient(BaseClient):
 	def add_member_to_group(self, group_id, user_id):
 		path = '/apps/%s/groups/%s/members/%s' % (self._get_app(), group_id, user_id)
 		return self._send(path, 'PUT', {})
+	def query_group(self, q):
+		path = '/apps/%s/groups/query' % (self._get_app())
+		headers = {'Content-Type': 'application/vnd.kii.GroupQueryRequest+json'}
+		data = q.to_map()
+		res = self._send(path, 'POST', headers, data)
+		return res['results'], res['nextPaginationKey'] if 'nextPaginationKey' in res else None
 
 
  

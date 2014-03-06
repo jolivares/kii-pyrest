@@ -32,9 +32,12 @@ class C(object):
 	def cEq(cls, field, value):
 		return cls({'type': 'eq', 'field': field, 'value': value})
 	@classmethod
+	def cHasField(cls, field, fieldType):
+		return cls({'type': 'hasField', 'field': field, 'fieldType': fieldType})
+	@classmethod
 	def cRange(cls, field, upper_limit, lower_limit, upper_included, lower_included):
 		return cls({'type': 'range', 'field': field, 'upperLimit': upper_limit, 'lowerLimit': lower_limit,
-			'upperIncluded': upper_included, 'lowerIncluded': lower_limit})
+			'upperIncluded': upper_included, 'lowerIncluded': lower_included})
 	@classmethod
 	def cStartsWith(cls, field, prefix):
 		return cls({'type': 'prefix', 'field': field, 'prefix': prefix})
@@ -48,6 +51,9 @@ class C(object):
 	def cWithInDistance(cls, field, center, radius, result_field = None):
 		return cls({'type': 'geodistance', 'field': field, 'center': center, 
 			'radius': radius, 'resultField': result_field })
+	@classmethod
+	def cNot(cls, clauses):
+		return cls({'type': 'not', 'clause': clauses})
 	@classmethod
 	def cAnd(cls, *clauses):
 		return cls({'type': 'and', 'clauses': [c.q for c in clauses]})

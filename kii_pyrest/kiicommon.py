@@ -26,8 +26,17 @@ def auth_app(client_id, client_secret):
 
 	if res.status == 400:
 		parse_auth_error(res, content)
-	
-	return json.loads(content)['access_token']
+
+	if 'json' in res.get('content-type', 'undefined'):
+		response = json.loads(content)
+		if 'access_token' in response:
+			return response['access_token']
+		else:
+			print "Request to %s returned bad response: %s" % (uri, content)
+			raise Exception(res.status, content)
+	else:
+		print "Request to %s returned bad response: %s" % (uri, content)
+		raise Exception(res.status, content)
 
 class BaseClient(object):
 	def __init__(self, token):		
@@ -40,7 +49,10 @@ class BaseClient(object):
 		headers['X-Kii-AppKey'] = APP_KEY
 		headers['Authorization'] = 'Bearer ' + self.token
 
-		data = json.dumps(body) if type(body) is dict else body		
+		data = json.dumps(body) if type(body) is dict else body
+		# set length in case empty data is got
+		if data == None or (type(data) is str and len(data) == 0):
+			headers['Content-Length'] = '0'
 		
 		rest = httplib2.Http()
 		res, content = rest.request(uri, method, headers = headers, body = data)
@@ -51,7 +63,7 @@ class BaseClient(object):
 		if res.status > 399:
 			parse_error(res, content)
 
-		if res.status != 204 and content != None and 'json' in res.get('content-type', 'undefined'):			
+		if res.status != 204 and content != None and 'json' in res.get('content-type', 'undefined'):
 			return json.loads(content)
 
 		return content
@@ -60,7 +72,7 @@ def parse_error(res, content):
 	print content
 	error = "ERROR: "
 	if content != None:
-		if "json" in res['content-type']:
+		if "json" in res.get('content-type', 'undefined'):
 			e = json.loads(content)
 			error += "%s - %s" % (e['errorCode'], e['message'])
 		else:

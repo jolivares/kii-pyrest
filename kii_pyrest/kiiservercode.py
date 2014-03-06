@@ -3,12 +3,23 @@ from kiicommon import BaseClient
 class ServerCodeClient(BaseClient):
 	def __init__(self, token):
 		BaseClient.__init__(self, token)
-	def deploy(self, filename):
+	def deploy(self, script, hooks = None):
+		# upload file
 		path = '/apps/%s/server-code' % (self._get_app())
 		headers = {'Content-Type': 'application/javascript'}
-		# open js file
-		f = open(filename, "r")
-		return self._send(path, 'POST', headers, f.read())['versionID']
+		f = open(script, "r")
+		id = self._send(path, 'POST', headers, f.read())['versionID']		
+		# upload hooks if required
+		if hooks != None:
+			f = open(hooks, "r")
+			path = '/apps/%s/hooks/versions/%s' % (self._get_app(), id)
+			headers = {'Content-Type': 'application/vnd.kii.HooksDeploymentRequest+json'}
+			self._send(path, 'PUT', headers, f.read())
+		# set to defualt
+		path = '/apps/%s/server-code/versions/current' % (self._get_app())
+		headers = {'Content-Type': 'text/plain'}
+		self._send(path, 'PUT', headers, id)
+		return id
 	def get(self, version_id):
 		path = '/apps/%s/server-code/versions/%s' % (self._get_app(), version_id)		
 		return self._send(path, 'GET', {})

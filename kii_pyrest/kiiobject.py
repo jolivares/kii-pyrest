@@ -86,9 +86,11 @@ class DataObjectClient(BaseClient):
 		headers = {'Content-Type' : data_type}
 		res = self._send(path, 'PATCH', headers, data)
 		return res
-	def replace(self, object_scope, bucket, object_id, data_type, data):
+	def replace(self, object_scope, bucket, object_id, data_type, data, version=None):
 		path = '%s/buckets/%s:%s/objects/%s' % (object_scope,  self.bucket_type, bucket, object_id)
 		headers = {'Content-Type' : data_type}
+		if version != None:
+			headers['If-Match'] = version
 		res = self._send(path, 'PUT', headers, data)
 		return res
 	def delete(self, object_scope, bucket, object_id):
