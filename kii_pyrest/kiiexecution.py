@@ -9,7 +9,7 @@ class ExecutionClient(BaseClient):
 	def __init__(self, token):
 		BaseClient.__init__(self, token)
 	def get(self, version_id):
-		path = '/apps/%s/hooks/executions%s' % (self._get_app(), execution_id)
+		path = '/apps/%s/hooks/executions/%s' % (self._get_app(), execution_id)
 		return self._send(path, 'GET', {})
 	def query(self, q):
 		path = '/apps/%s/hooks/executions/query' % (self._get_app())
